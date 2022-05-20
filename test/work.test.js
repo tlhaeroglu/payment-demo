@@ -97,4 +97,18 @@ describe("Payment", () => {
       assert.equal(findAccount(20).data.balance, 55.2);
     });
   });
+
+  describe("Payment policy failed", () => {
+    it("Pay the individual account failed", () => {
+      var obj = {
+        senderAccount: 20,
+        receiverAccount: 10,
+        amount: 5.2,
+      };
+      assert.equal(tryPayment(obj).success, false);
+    });
+    it("Receiver balance is not increased", () => {
+      assert.equal(findAccount(10).data.balance, 44.8);
+    });
+  });
 });
