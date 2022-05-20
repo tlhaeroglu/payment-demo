@@ -1,4 +1,6 @@
 import { Transaction } from "../models/Transaction.js";
+import { success, send, failure } from "../helpers/message.js";
+import { currency } from "../helpers/currency.js";
 
 var accounts = [];
 var transactions = [];
@@ -22,12 +24,21 @@ export function makeAccounting(prop1, processType, prop2) {
   // Bu fonksiyonun kullanılma sebebi ise,
   // toplama çıkarma işleminde double değerde hatalar çıkmasıdır,
 
-  if (processType === "+") {
-    // Toplama işlemi yapılır. prop1 + prop2
-    return parseFloat(parseFloat(prop1 + prop2).toFixed(2));
-  } else {
-    // Çıkarma işlemi yapılır. prop1 - prop2
-    return parseFloat(parseFloat(prop1 - prop2).toFixed(2));
+  switch (processType) {
+    case "+":
+      return parseFloat(parseFloat(prop1 + prop2).toFixed(2));
+      break;
+    case "-":
+      return parseFloat(parseFloat(prop1 - prop2).toFixed(2));
+      break;
+    case "*":
+      return parseFloat(parseFloat(prop1 * prop2).toFixed(2));
+      break;
+    case "/":
+      return parseFloat(parseFloat(prop1 / prop2).toFixed(2));
+      break;
+    default:
+      return 0;
   }
 }
 
@@ -40,14 +51,9 @@ export function addAccount(Account) {
 
   if (result) {
     accounts.push(Account);
-    console.log(Account.accountNumber + " added");
-    return { success: true, message: "Account created" };
+    return success("Account created");
   } else {
-    console.log(Account.accountNumber + " not added");
-    return {
-      success: false,
-      error: "Account exist already",
-    };
+    return failure("Account already exists");
   }
 }
 
@@ -59,10 +65,7 @@ export function findAccount(accountNumber) {
   if (result) {
     return { success: true, data: result };
   } else {
-    return {
-      success: false,
-      error: "Account not found",
-    };
+    return failure("Account not found");
   }
 }
 
@@ -80,43 +83,35 @@ export function tryPayment(Payment) {
 
     if (sender.accountType !== "individual") {
       // ödemeyi yapan kişi bir bireysel hesap değil
-      return {
-        success: false,
-        error: "Sender account is not individual",
-      };
+      return failure("Sender is not an individual account");
     }
 
     if (receiver.accountType !== "corporate") {
       // ödemeyi alan kişi bir kurumsal hesap değil
-      return {
-        success: false,
-        error: "Receiver account is not corporate",
-      };
+      return failure("Receiver is not a corporate account");
     }
 
     if (sender.balance < Payment.amount) {
       // ödemeyi yapan kişinin bakiye yetersiz
-      return {
-        success: false,
-        error: "Sender balance is not enough",
-      };
+      return failure("Sender does not have enough balance");
     }
     // ödeme yapılıyor
+    var currencyType = sender.currencyCode + receiver.currencyCode;
+    var converted = makeAccounting(
+      Payment.amount,
+      "*",
+      currency.get(currencyType)
+    );
 
     sender.balance = makeAccounting(sender.balance, "-", Payment.amount);
-    receiver.balance = makeAccounting(receiver.balance, "+", Payment.amount);
+
+    receiver.balance = makeAccounting(receiver.balance, "+", converted);
 
     logTransaction(sender.accountNumber, Payment.amount, "payment"); // ödeme yapıldığında loglanır.
-    return {
-      success: true,
-      message: "Payment successful",
-    };
+    return success("Payment successful");
   } else {
     // eğer bulunamayan herhangi bir hesap varsa hata veriyoruz.
-    return {
-      success: false,
-      error: "Accounts not reachable",
-    };
+    return failure("Account not found");
   }
 }
 
@@ -128,34 +123,16 @@ export function tryDeposit(Deposit) {
 
     if (account.accountType !== "individual") {
       // yatırma işlemini yapan kişi bir bireysel hesap değil
-      return {
-        success: false,
-        error: "Deposit account is not individual",
-      };
+      return failure("Account is not an individual account");
     }
-
-    /*if (!checkDecimalPlaces(Deposit.amount)) {
-      // geçersiz yatırma , fazladan basamak sebebiyle error dönüyoruz
-
-      return {
-        success: false,
-        error: "Amount is not valid ,please enter max 2 decimal places",
-      };
-    }*/
 
     // yatırma işlemi yapılıyor
     account.balance = makeAccounting(account.balance, "+", Deposit.amount);
     logTransaction(account.accountNumber, Deposit.amount, "deposit");
-    return {
-      success: true,
-      message: "Deposit successful",
-    };
+    return success("Deposit successful");
   } else {
     // eğer bulunamayan hesap varsa hata veriyoruz.
-    return {
-      success: false,
-      error: "Account not reachable",
-    };
+    return failure("Account not found");
   }
 }
 
@@ -167,32 +144,20 @@ export function tryWithdraw(Withdraw) {
 
     if (account.accountType !== "individual") {
       // çekme işlemini yapan kişi bir bireysel hesap değil
-      return {
-        success: false,
-        error: "Withdraw account is not individual",
-      };
+      return failure("Account is not an individual account");
     }
 
     if (account.balance < Withdraw.amount) {
       // çekme işlemini yapan kişinin bakiye yetersiz
-      return {
-        success: false,
-        error: "Withdraw balance is not enough",
-      };
+      return failure("Account does not have enough balance");
     }
     // çekme işlemini yapılıyor
     account.balance = makeAccounting(account.balance, "-", Withdraw.amount);
     logTransaction(account.accountNumber, Withdraw.amount, "withdraw");
-    return {
-      success: true,
-      message: "Withdraw successful",
-    };
+    return success("Withdraw successful");
   } else {
     // eğer bulunamayan hesap varsa hata veriyoruz.
-    return {
-      success: false,
-      error: "Account not reachable",
-    };
+    return failure("Account not found");
   }
 }
 
@@ -208,15 +173,9 @@ export function showTransactions(accountNumber) {
       }
     });
 
-    return {
-      success: true,
-      data: data,
-    };
+    return send(data);
   } else {
     // eğer bulunamayan hesap varsa hata veriyoruz.
-    return {
-      success: false,
-      error: "Account not reachable",
-    };
+    return failure("Account not found");
   }
 }

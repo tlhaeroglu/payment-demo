@@ -37,5 +37,9 @@ app.listen(PORT || process.env.PORT, () => {
 import { Account } from "./models/Account.js";
 import { addAccount } from "./data/work.js";
 addAccount(new Account(1, "TRY", "John Doe", "individual", 50));
-addAccount(new Account(2, "TRY", "Jane Doe", "individual"));
-addAccount(new Account(3, "TRY", "Talha Eroğlu", "corporate"));
+addAccount(new Account(2, "USD", "Jane Doe", "individual", 50));
+addAccount(new Account(3, "EUR", "Jane Doe", "individual", 50));
+
+addAccount(new Account(4, "TRY", "Talha Eroğlu", "corporate"));
+addAccount(new Account(5, "USD", "Talha Eroğlu", "corporate"));
+addAccount(new Account(6, "EUR", "Talha Eroğlu", "corporate"));

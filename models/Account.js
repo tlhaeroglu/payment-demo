@@ -2,9 +2,9 @@ export const validateAccount = {
   type: "object",
   properties: {
     accountNumber: { type: "integer" },
-    currencyCode: { type: "string" },
+    currencyCode: { enum: ["TRY", "USD", "EUR"] },
     ownerName: { type: "string" },
-    accountType: { type: "string" },
+    accountType: { enum: ["individual", "corporate"] },
     balance: { type: "number" },
   },
   required: ["accountNumber", "currencyCode", "ownerName", "accountType"],
